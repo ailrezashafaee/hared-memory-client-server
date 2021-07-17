@@ -7,8 +7,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <semaphore.h>
+#include <pthread.h>
+
 #define CHUNK 100
 #define SIZE 10000
+#define TAKEN 1
+#define FREE 0
+#define NEW 2
 struct Hndl{
      int msgNum;
      int state[CHUNK];
@@ -23,19 +28,19 @@ struct Message
 size_t storageSize = CHUNK * SIZE + sizeof(struct Hndl);
 int accept(struct Hndl* hdl , int start)
 {
-     while()
+     while(1)
      {
-          if(hdl->state[start] == 1)
+          if(hdl->state[start] == NEW)
           {
-               
+               hdl->state[start] = TAKEN;
+               return start;
           }
-          
+          start = (start+1)%CHUNK;
      }
 }
 int main()
 {
      int fd_a;
-     printf("%ld\n" , storageSize);
      struct Hndl *hdlPtr;
      fd_a = shm_open("a" ,   O_RDWR |O_CREAT   , 0666);
      if(fd_a == -1)
@@ -60,11 +65,9 @@ int main()
           hdlPtr->state[i] = 0;
           hdlPtr->location[i] = -1;
      }
-     hdlPtr->state[0] = 1;
-     sem_init(hdlPtr->mutex , 1 , 1);
      puts("server listening to clients...");
-     while(1)
-     {
-          
-     }              
+     int newId;
+     int index = 0;
+     printf("%d\n" , accept(hdlPtr , index));   
+     
 }

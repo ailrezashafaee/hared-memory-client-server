@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
 #define CHUNK 100
 #define SIZE 10000
 struct Hndl{
@@ -57,19 +59,16 @@ int main(int argc , char *argv[])
           return 1;
      }
      int ind;
-     printf("%d\n" , hdl->msgNum);
-     sem_wait(hdl->mutex);
      ind = findIndex(hdl);
-     printf("%d\n", hdl->ind);
+     printf("%d\n", ind);
      hdl->location[ind] = clientPid;
-     sem_post(hdl->mutex); 
-     ms = (struct Message*)mmap(hdl , storageSize ,PROT_WRITE , MAP_SHARED ,  fd_a , sizeof(struct Hndl) + ind*(sizeof(struct Message)));
+     ms =(struct Message*)(hdl + sizeof(struct Hndl));
      ms->pid = clientPid;
      for(int i =0 ;i < len; i++)
      {
           ms->message[i] = argv[1][i];
      }
      ms->message[len] = '\0';
-     hdl->state[ind] = 1;
+     hdl->state[ind] = 2;
      return 0;
 }
