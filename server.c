@@ -43,7 +43,7 @@ void *serverReply(void*arg)
      mesAPtr = (struct Message*)temp;
      printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
      sleep(10);
-     sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\n The pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
+     sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\nThe pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
      reply->location[index] = mesAPtr->pid;
      temp = (void *)reply;
      temp += sizeof(struct Reply);
@@ -91,6 +91,7 @@ int main()
           reply->location[i] = -1;
      }
      hdlPtr->state[0] = 1; 
+     sem_init(&hdlPtr->mutex , 1 , 1);
      puts("server listening to clients...");
      int newId;
      int index = 0;
@@ -115,4 +116,4 @@ int main()
           puts("client done");
      } 
      
-}  
+}

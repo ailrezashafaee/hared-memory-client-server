@@ -17,7 +17,7 @@ struct Hndl{
      int msgNum;
      int state[CHUNK];
      int location[CHUNK];
-     sem_t *mutex;
+     sem_t mutex;
 };
 struct Message
 {

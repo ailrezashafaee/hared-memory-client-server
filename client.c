@@ -16,7 +16,6 @@ int findIndex(struct Hndl *hdl)
           }
      }
 }
-
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int main(int argc , char *argv[])
 {
@@ -49,9 +48,12 @@ int main(int argc , char *argv[])
           perror("mmap failed in client program");
           return 1;
      }
+     
      int ind;
+     sem_wait(&hdl->mutex);
      ind = findIndex(hdl);
      hdl->state[ind] = NEW;
+     sem_post(&hdl->mutex);
      printf("%d\n", ind);
      hdl->location[ind] = clientPid;
      test = (void *)hdl;
