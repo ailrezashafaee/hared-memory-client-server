@@ -7,16 +7,19 @@
 #include <semaphore.h>
 #define CHUNK 100
 #define SIZE 10000
+#define TAKEN 1
+#define FREE 0
+#define NEW 2
 struct Hndl{
      int msgNum;
      int state[CHUNK];
-     pid_t location[CHUNK];
+     int location[CHUNK];
      sem_t *mutex;
 };
 struct Message
 {
      pid_t pid;
-     char message[SIZE-sizeof(pid_t) - 1];
+     char message[SIZE];
 };
 int findIndex(struct Hndl *hdl)
 {
@@ -28,11 +31,12 @@ int findIndex(struct Hndl *hdl)
           }
      }
 }
-size_t storageSize = CHUNK * SIZE + sizeof(struct Hndl);
+size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int main(int argc , char *argv[])
 {
      pid_t clientPid = getpid();
      int fd_a , len;
+     void *test;
      if(argc !=2)
      {
           printf("please enter the format : %s <text>\n", argv[0]);
@@ -46,13 +50,13 @@ int main(int argc , char *argv[])
      }
      struct Hndl *hdl;
      struct Message *ms;
-     fd_a = shm_open("a" , O_RDWR ,0666);
+     fd_a = shm_open("a" , O_RDWR |O_APPEND ,0777);
      if(fd_a==-1)
      {
           perror("shm open failed in clinet program");
           return 1;
      }
-     hdl = (struct Hndl*)mmap(NULL, storageSize , PROT_READ  | PROT_WRITE ,MAP_SHARED, fd_a , 0);
+     hdl = (struct Hndl*)mmap(NULL, storageSize , PROT_READ | PROT_WRITE ,MAP_SHARED, fd_a , 0);
      if(hdl == MAP_FAILED)
      {
           perror("mmap failed in client program");
@@ -62,13 +66,11 @@ int main(int argc , char *argv[])
      ind = findIndex(hdl);
      printf("%d\n", ind);
      hdl->location[ind] = clientPid;
-     ms =(struct Message*)(hdl + sizeof(struct Hndl));
+     test = (void *)hdl;
+     test += sizeof(struct Hndl);
+     test += sizeof(struct Message)*ind;
+     ms = (struct Message*)test;
      ms->pid = clientPid;
-     for(int i =0 ;i < len; i++)
-     {
-          ms->message[i] = argv[1][i];
-     }
-     ms->message[len] = '\0';
      hdl->state[ind] = 2;
      return 0;
 }
