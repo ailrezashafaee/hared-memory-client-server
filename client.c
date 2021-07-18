@@ -5,22 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
-#define CHUNK 100
-#define SIZE 10000
-#define TAKEN 1
-#define FREE 0
-#define NEW 2
-struct Hndl{
-     int msgNum;
-     int state[CHUNK];
-     int location[CHUNK];
-     sem_t *mutex;
-};
-struct Message
-{
-     pid_t pid;
-     char message[SIZE];
-};
+#include "props.h"
 int findIndex(struct Hndl *hdl)
 {
      for(int i =0 ;i < CHUNK ; i++)
@@ -35,7 +20,7 @@ size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int main(int argc , char *argv[])
 {
      pid_t clientPid = getpid();
-     int fd_a , len;
+     int fd_a , len, fd_b;
      void *test;
      if(argc !=2)
      {
@@ -49,7 +34,8 @@ int main(int argc , char *argv[])
           return 1;
      }
      struct Hndl *hdl;
-     struct Message *ms;
+     struct Reply *reply;
+     struct Message *ms , *msb;
      fd_a = shm_open("a" , O_RDWR |O_APPEND ,0777);
      if(fd_a==-1)
      {
@@ -71,6 +57,20 @@ int main(int argc , char *argv[])
      test += sizeof(struct Message)*ind;
      ms = (struct Message*)test;
      ms->pid = clientPid;
+     for(int i =0 ;i < len;i++)
+     {
+          ms->message[i] = argv[1][i];
+     }
+     ms->message[len] = '\0';
      hdl->state[ind] = 2;
+     printf("process id : %d\n",  clientPid);
+     fd_b = shm_open("b" , O_RDWR |O_APPEND ,0777);
+     reply = (struct Reply*)mmap(NULL, storageSize , PROT_READ | PROT_WRITE ,MAP_SHARED, fd_b , 0);
+     test = (void *)reply;
+     test += sizeof(struct Reply);
+     test+= sizeof(struct Message)*ind;
+     msb= (struct Message *)test;
+     while(msb->pid != clientPid);
+     printf("%s\n" , msb->message);
      return 0;
 }

@@ -8,23 +8,8 @@
 #include <sys/types.h>
 #include <semaphore.h>
 #include <pthread.h>
-
-#define CHUNK 100
-#define SIZE 10000
-#define TAKEN 1
-#define FREE 0
-#define NEW 2
-struct Hndl{
-     int msgNum;
-     int state[CHUNK];
-     int location[CHUNK];
-     sem_t *mutex;
-};
-struct Message
-{
-     pid_t pid;
-     char message[SIZE];
-};
+#include <string.h>
+#include "props.h"
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int accept(struct Hndl* hdl , int start)
 {
@@ -38,13 +23,15 @@ int accept(struct Hndl* hdl , int start)
           start = (start+1)%CHUNK;
      }
 }
+
 int main()
 {
-     int fd_a;
+     int fd_a , fd_b;
      printf("%ld\n" , sizeof(struct Message));
      printf("%ld\n", storageSize);
      struct Hndl *hdlPtr;
-     struct Message *mesAPtr;
+     struct Reply *reply;
+     struct Message *mesAPtr, *mesBPtr;
      fd_a = shm_open("a" ,   O_RDWR |O_CREAT   , 0777);
      if(fd_a == -1)
      {
@@ -56,6 +43,9 @@ int main()
           perror("ftruncate");
           return 20;
      }
+     fd_b = shm_open("b" ,   O_RDWR |O_CREAT   , 0777);
+     ftruncate(fd_b , storageSize);
+     reply=(struct Reply*)mmap(NULL ,storageSize, PROT_READ | PROT_WRITE , MAP_SHARED,fd_b ,0);
      hdlPtr = (struct Hndl*)mmap(NULL ,storageSize, PROT_READ | PROT_WRITE , MAP_SHARED,fd_a ,0); 
      if((void *)hdlPtr == MAP_FAILED)
      {
@@ -67,12 +57,14 @@ int main()
      {
           hdlPtr->state[i] = 0;
           hdlPtr->location[i] = -1;
+          reply->location[i] = -1;
      }
      hdlPtr->state[0] = 1; 
      puts("server listening to clients...");
      int newId;
      int index = 0;
      void *test;
+     char ans[SIZE];
      while (1) 
      {
           newId = accept(hdlPtr , index);
@@ -82,7 +74,20 @@ int main()
           test+=sizeof(struct Hndl);
           test+=sizeof(struct Message)*newId;
           mesAPtr = (struct Message*)test;
-          printf("%ld",mesAPtr->pid);
+          printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
+          sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\n The pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
+          printf("%s\n" , ans);
+          reply->location[newId] = mesAPtr->pid;
+          test = (void *)reply;
+          test += sizeof(struct Reply);
+          test += sizeof(struct Message)*newId;
+          mesBPtr = (struct Message*)test;
+          for(int i =0 ;i<strlen(ans) ; i++)
+               mesBPtr->message[i] = ans[i];
+          mesBPtr->message[strlen(ans)] = '\0';
+          mesBPtr->pid = mesAPtr->pid;
+
+          puts("client done");
      } 
      
-}   
+}  
