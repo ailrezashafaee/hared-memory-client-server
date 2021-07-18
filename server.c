@@ -53,6 +53,10 @@ void *serverReply(void*arg)
           mesBPtr->message[i] = ans[i];
      mesBPtr->message[strlen(ans)] = '\0';
      mesBPtr->pid = mesAPtr->pid;
+     sem_wait(&reply->numLock);
+     reply->msgNum++;
+     sem_post(&reply->numLock);
+     puts("client reply sended");
      pthread_exit(0);
 }
 int main()
@@ -84,14 +88,16 @@ int main()
           return 30;
      }
      hdlPtr->msgNum = 0;
+     reply->msgNum = 0;
      for(int i =0 ;i < CHUNK ;i++)
      {
           hdlPtr->state[i] = 0;
           hdlPtr->location[i] = -1;
           reply->location[i] = -1;
      }
-     hdlPtr->state[0] = 1; 
      sem_init(&hdlPtr->mutex , 1 , 1);
+     sem_init(&hdlPtr->numLock,1 , 1);  
+     sem_init(&reply->numLock, 1, 1);
      puts("server listening to clients...");
      int newId;
      int index = 0;
@@ -103,6 +109,8 @@ int main()
      while (1) 
      {
           newId = accept(hdlPtr , index);
+          hdlPtr->msgNum+=1;
+          printf("number of message : %d\n" , hdlPtr->msgNum);
           puts("new client connected");
           args.index = newId;
           args.reply = reply;
@@ -113,7 +121,6 @@ int main()
                return 1;
           }
           index = (index + 1)%CHUNK;
-          puts("client done");
      } 
      
 }

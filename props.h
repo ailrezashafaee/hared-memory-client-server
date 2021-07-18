@@ -18,6 +18,7 @@ struct Hndl{
      int state[CHUNK];
      int location[CHUNK];
      sem_t mutex;
+     sem_t numLock;
 };
 struct Message
 {
@@ -25,5 +26,7 @@ struct Message
      char message[SIZE];
 };
 struct Reply{
+     int msgNum;
      int location[CHUNK];
+     sem_t numLock;
 };

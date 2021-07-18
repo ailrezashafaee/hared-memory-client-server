@@ -78,6 +78,10 @@ int main(int argc , char *argv[])
      printf("%s\n" , msb->message);
      hdl->location[ind] = -1;
      reply->location[ind] = -1;
+     sem_wait(&hdl->numLock);
+     hdl->msgNum--;
+     sem_post(&hdl->numLock);
+     
      hdl->state[ind] = FREE;
      return 0;
 }
