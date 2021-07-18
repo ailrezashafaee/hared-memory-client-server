@@ -10,12 +10,17 @@
 #include <pthread.h>
 #include <string.h>
 #include "props.h"
+struct ThreadArgs{
+     struct Hndl*hdlPtr;
+     struct Reply* reply;
+     int index;
+};
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int accept(struct Hndl* hdl , int start)
 {
      while(1)
      {
-          if(hdl->state[start] == NEW)
+          if(hdl->state[start] == READY)
           {
                hdl->state[start] = TAKEN;
                return start;
@@ -23,7 +28,33 @@ int accept(struct Hndl* hdl , int start)
           start = (start+1)%CHUNK;
      }
 }
-
+void *serverReply(void*arg)
+{    
+     struct ThreadArgs *args = arg;
+     int index = args->index;
+     struct Hndl*hdlPtr = args->hdlPtr;
+     struct Reply*reply = args->reply;
+     void *temp;
+     char ans[SIZE];
+     struct Message*mesAPtr , *mesBPtr;
+     temp = (void*)hdlPtr;
+     temp+=sizeof(struct Hndl);
+     temp+=sizeof(struct Message)*index;
+     mesAPtr = (struct Message*)temp;
+     printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
+     sleep(10);
+     sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\n The pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
+     reply->location[index] = mesAPtr->pid;
+     temp = (void *)reply;
+     temp += sizeof(struct Reply);
+     temp += sizeof(struct Message)*index;
+     mesBPtr = (struct Message*)temp;
+     for(int i =0 ;i<strlen(ans) ; i++)
+          mesBPtr->message[i] = ans[i];
+     mesBPtr->message[strlen(ans)] = '\0';
+     mesBPtr->pid = mesAPtr->pid;
+     pthread_exit(0);
+}
 int main()
 {
      int fd_a , fd_b;
@@ -65,28 +96,22 @@ int main()
      int index = 0;
      void *test;
      char ans[SIZE];
+     pthread_t tid[50];
+     int co =0;
+     struct ThreadArgs args;
      while (1) 
      {
           newId = accept(hdlPtr , index);
           puts("new client connected");
+          args.index = newId;
+          args.reply = reply;
+          args.hdlPtr = hdlPtr;
+          if(pthread_create(&tid[co], NULL, serverReply, (void *)&args) == -1)
+          {
+               printf("pthread_create error in server");
+               return 1;
+          }
           index = (index + 1)%CHUNK;
-          test = (void*)hdlPtr;
-          test+=sizeof(struct Hndl);
-          test+=sizeof(struct Message)*newId;
-          mesAPtr = (struct Message*)test;
-          printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
-          sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\n The pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
-          printf("%s\n" , ans);
-          reply->location[newId] = mesAPtr->pid;
-          test = (void *)reply;
-          test += sizeof(struct Reply);
-          test += sizeof(struct Message)*newId;
-          mesBPtr = (struct Message*)test;
-          for(int i =0 ;i<strlen(ans) ; i++)
-               mesBPtr->message[i] = ans[i];
-          mesBPtr->message[strlen(ans)] = '\0';
-          mesBPtr->pid = mesAPtr->pid;
-
           puts("client done");
      } 
      

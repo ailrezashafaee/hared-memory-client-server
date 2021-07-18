@@ -10,12 +10,13 @@ int findIndex(struct Hndl *hdl)
 {
      for(int i =0 ;i < CHUNK ; i++)
      {
-          if(hdl->state[i] == 0)
+          if(hdl->state[i] == FREE)
           {
                return i;
           }
      }
 }
+
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int main(int argc , char *argv[])
 {
@@ -50,6 +51,7 @@ int main(int argc , char *argv[])
      }
      int ind;
      ind = findIndex(hdl);
+     hdl->state[ind] = NEW;
      printf("%d\n", ind);
      hdl->location[ind] = clientPid;
      test = (void *)hdl;
@@ -62,7 +64,7 @@ int main(int argc , char *argv[])
           ms->message[i] = argv[1][i];
      }
      ms->message[len] = '\0';
-     hdl->state[ind] = 2;
+     hdl->state[ind] = READY;
      printf("process id : %d\n",  clientPid);
      fd_b = shm_open("b" , O_RDWR |O_APPEND ,0777);
      reply = (struct Reply*)mmap(NULL, storageSize , PROT_READ | PROT_WRITE ,MAP_SHARED, fd_b , 0);
@@ -72,5 +74,8 @@ int main(int argc , char *argv[])
      msb= (struct Message *)test;
      while(msb->pid != clientPid);
      printf("%s\n" , msb->message);
+     hdl->location[ind] = -1;
+     reply->location[ind] = -1;
+     hdl->state[ind] = FREE;
      return 0;
 }
