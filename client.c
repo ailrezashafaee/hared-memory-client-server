@@ -81,7 +81,9 @@ int main(int argc , char *argv[])
      sem_wait(&hdl->numLock);
      hdl->msgNum--;
      sem_post(&hdl->numLock);
-     
+     sem_wait(&reply->numLock);
+     reply->msgNum--;
+     sem_post(&reply->numLock);
      hdl->state[ind] = FREE;
      return 0;
 }

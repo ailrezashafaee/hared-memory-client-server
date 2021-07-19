@@ -51,13 +51,10 @@ void *serverReply(void*arg)
      char ans[SIZE];
      struct Message*mesAPtr , *mesBPtr;
      temp = (void*)hdlPtr;
-     
      temp+=sizeof(struct Hndl);
      temp+=sizeof(struct Message)*index;
      mesAPtr = (struct Message*)temp;
      printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
-     
-     sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\nThe pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
      reply->location[index] = mesAPtr->pid;
      temp = (void *)reply;
      temp += sizeof(struct Reply);
@@ -77,6 +74,7 @@ void *serverReply(void*arg)
 int main()
 {
      int fd_a , fd_b;
+     int numberOfClients = 0;
      printf("%ld\n" , sizeof(struct Message));
      printf("%ld\n", storageSize);
      struct Hndl *hdlPtr;
@@ -125,8 +123,9 @@ int main()
      {
           co = -1;
           newId = accept(hdlPtr , index);
+          numberOfClients++;
+          printf("number of clients : %d\n" , numberOfClients);
           hdlPtr->msgNum+=1;
-          printf("number of message : %d\n" , hdlPtr->msgNum);
           puts("new client connected");
           while ((co ==-1))
           {
