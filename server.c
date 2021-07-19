@@ -54,7 +54,7 @@ void *serverReply(void*arg)
      temp+=sizeof(struct Hndl);
      temp+=sizeof(struct Message)*index;
      mesAPtr = (struct Message*)temp;
-     printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
+     sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\nThe pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
      reply->location[index] = mesAPtr->pid;
      temp = (void *)reply;
      temp += sizeof(struct Reply);
