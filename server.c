@@ -14,8 +14,20 @@ struct ThreadArgs{
      struct Hndl*hdlPtr;
      struct Reply* reply;
      int index;
+     int tid;
 };
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
+int getId()
+{
+    for(int i=0 ;i  < MAX ; i++)
+    {
+        if(flags[i] == 0)
+        {
+            return i;
+        }
+    }   
+    return -1;
+}
 int accept(struct Hndl* hdl , int start)
 {
      while(1)
@@ -32,17 +44,19 @@ void *serverReply(void*arg)
 {    
      struct ThreadArgs *args = arg;
      int index = args->index;
+     int tid = args->tid;
      struct Hndl*hdlPtr = args->hdlPtr;
      struct Reply*reply = args->reply;
      void *temp;
      char ans[SIZE];
      struct Message*mesAPtr , *mesBPtr;
      temp = (void*)hdlPtr;
+     
      temp+=sizeof(struct Hndl);
      temp+=sizeof(struct Message)*index;
      mesAPtr = (struct Message*)temp;
      printf("%d\n %s\n",mesAPtr->pid, mesAPtr->message);
-     sleep(10);
+     
      sprintf(&ans , "Server Reply : \nThe lenght of message is : %ld\nThe pid of client is : %d\n" , strlen(mesAPtr->message) ,mesAPtr->pid);
      reply->location[index] = mesAPtr->pid;
      temp = (void *)reply;
@@ -56,7 +70,8 @@ void *serverReply(void*arg)
      sem_wait(&reply->numLock);
      reply->msgNum++;
      sem_post(&reply->numLock);
-     puts("client reply sended");
+     printf("thread %d finished \n" , tid);
+     flags[tid] = 0;
      pthread_exit(0);
 }
 int main()
@@ -104,17 +119,24 @@ int main()
      void *test;
      char ans[SIZE];
      pthread_t tid[50];
-     int co =0;
+     int co;
      struct ThreadArgs args;
      while (1) 
      {
+          co = -1;
           newId = accept(hdlPtr , index);
           hdlPtr->msgNum+=1;
           printf("number of message : %d\n" , hdlPtr->msgNum);
           puts("new client connected");
+          while ((co ==-1))
+          {
+               co = getId();
+          }
+          flags[co] = 1;
           args.index = newId;
           args.reply = reply;
           args.hdlPtr = hdlPtr;
+          args.tid = co;
           if(pthread_create(&tid[co], NULL, serverReply, (void *)&args) == -1)
           {
                printf("pthread_create error in server");

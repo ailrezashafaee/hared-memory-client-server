@@ -13,6 +13,8 @@
 #define FREE 0
 #define NEW 2
 #define READY 3
+#define MAX 50
+int flags[MAX];
 struct Hndl{
      int msgNum;
      int state[CHUNK];
