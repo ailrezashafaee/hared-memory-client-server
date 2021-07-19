@@ -16,6 +16,7 @@ int findIndex(struct Hndl *hdl)
                return i;
           }
      }
+     return -1;
 }
 size_t storageSize = CHUNK * sizeof(struct Message) + sizeof(struct Hndl);
 int main(int argc , char *argv[])
@@ -65,6 +66,7 @@ int main(int argc , char *argv[])
      }
      int ind;
      sem_wait(&hdl->mutex);
+     while(findIndex(hdl) == -1);
      ind = findIndex(hdl);
      hdl->state[ind] = NEW;
      sem_post(&hdl->mutex);

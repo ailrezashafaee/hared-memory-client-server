@@ -75,8 +75,6 @@ int main()
 {
      int fd_a , fd_b;
      int numberOfClients = 0;
-     printf("%ld\n" , sizeof(struct Message));
-     printf("%ld\n", storageSize);
      struct Hndl *hdlPtr;
      struct Reply *reply;
      struct Message *mesAPtr, *mesBPtr;
@@ -143,5 +141,19 @@ int main()
           }
           index = (index + 1)%CHUNK;
      } 
+     for(int i = 0 ; i < MAX ;i++)
+     {
+          pthread_join(tid[i] , NULL);
+     }
+     if(shm_unlink("a") == -1)
+     {
+          perror("shm unlink on file a");
+          return 1;
+     }
+     if(shm_unlink("b") == -1)
+     {
+          perror("shm unlink on file b");
+          return 1;
+     }
      
 }
